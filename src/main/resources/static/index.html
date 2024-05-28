@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact List</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .table-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .pagination {
+            justify-content: center;
+        }
+        .modal-header {
+            border-bottom: none;
+        }
+        .modal-footer {
+            border-top: none;
+        }
+        .filter-input {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .sort-icon {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="d-flex justify-content-between mb-3">
+        <h2>Contact List</h2>
+        <button class="btn btn-primary" data-toggle="modal" data-target="#contactModal" onclick="openContactModal()">Add Contact</button>
+    </div>
+    <div class="table-container">
+        <div class="d-flex mb-3">
+            <input type="text" id="filterId" class="filter-input" placeholder="Filter by ID">
+            <input type="text" id="filterFirstName" class="filter-input" placeholder="Filter by First Name">
+            <input type="text" id="filterLastName" class="filter-input" placeholder="Filter by Last Name">
+            <input type="text" id="filterPhone" class="filter-input" placeholder="Filter by Phone">
+            <input type="text" id="filterAddress" class="filter-input" placeholder="Filter by Address">
+        </div>
+        <table class="table table-hover">
+            <thead>
+            <tr>
+                <th>ID <i class="fas fa-sort sort-icon" onclick="sortTable('id')"></i></th>
+                <th>First Name <i class="fas fa-sort sort-icon" onclick="sortTable('firstName')"></i></th>
+                <th>Last Name <i class="fas fa-sort sort-icon" onclick="sortTable('lastName')"></i></th>
+                <th>Phone <i class="fas fa-sort sort-icon" onclick="sortTable('phone')"></i></th>
+                <th>Address <i class="fas fa-sort sort-icon" onclick="sortTable('address')"></i></th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="contactTableBody">
+            <!-- Contacts will be dynamically inserted here -->
+            </tbody>
+        </table>
+        <nav>
+            <ul class="pagination">
+                <!-- Pagination will be dynamically inserted here -->
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Contact Modal -->
+<div class="modal fade" id="contactModal" tabindex="-1" role="dialog" aria-labelledby="contactModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="contactModalLabel">Contact</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="contactForm">
+                    <input type="hidden" id="contactId">
+                    <div class="form-group">
+                        <label for="firstName">First Name</label>
+                        <input type="text" class="form-control" id="firstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name</label>
+                        <input type="text" class="form-control" id="lastName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone</label>
+                        <input type="text" class="form-control" id="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="address">Address</label>
+                        <input type="text" class="form-control" id="address" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    const apiBaseUrl = '/api/contacts';
+    let currentPage = 0;
+    const pageSize = 10;
+    let sortField = '';
+    let sortDirection = 'asc';
+
+    $(document).ready(function () {
+        loadContacts();
+
+        $('.filter-input').keyup(function () {
+            loadContacts();
+        });
+
+        $('#contactForm').submit(function (event) {
+            event.preventDefault();
+            const contactId = $('#contactId').val();
+            const contactData = {
+                firstName: $('#firstName').val(),
+                lastName: $('#lastName').val(),
+                phone: $('#phone').val(),
+                address: $('#address').val()
+            };
+
+            if (contactId) {
+                // Edit contact
+                $.ajax({
+                    url: `${apiBaseUrl}/${contactId}`,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(contactData),
+                    success: function () {
+                        $('#contactModal').modal('hide');
+                        loadContacts();
+                    }
+                });
+            } else {
+                // Add new contact
+                $.ajax({
+                    url: apiBaseUrl,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(contactData),
+                    success: function () {
+                        $('#contactModal').modal('hide');
+                        loadContacts();
+                    }
+                });
+            }
+        });
+    });
+
+    function loadContacts() {
+        const filterId = $('#filterId').val();
+        const filterFirstName = $('#filterFirstName').val();
+        const filterLastName = $('#filterLastName').val();
+        const filterPhone = $('#filterPhone').val();
+        const filterAddress = $('#filterAddress').val();
+
+        $.get(`${apiBaseUrl}?page=${currentPage}&size=${pageSize}&sort=${sortField}&direction=${sortDirection}&id=${filterId}&firstName=${filterFirstName}&lastName=${filterLastName}&phone=${filterPhone}&address=${filterAddress}`, function (data) {
+            const contactTableBody = $('#contactTableBody');
+            contactTableBody.empty();
+            data.content.forEach(contact => {
+                contactTableBody.append(`
+                    <tr>
+                        <td>${contact.id}</td>
+                        <td>${contact.firstName}</td>
+                        <td>${contact.lastName}</td>
+                        <td>${contact.phone}</td>
+                        <td>${contact.address}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="editContact(${contact.id})">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteContact(${contact.id})">Delete</button>
+                        </td>
+                    </tr>
+                `);
+            });
+            renderPagination(data.totalPages);
+        });
+    }
+
+    function renderPagination(totalPages) {
+        const pagination = $('.pagination');
+        pagination.empty();
+        for (let i = 0; i < totalPages; i++) {
+            pagination.append(`
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="goToPage(${i})">${i + 1}</a>
+                </li>
+            `);
+        }
+    }
+
+    function goToPage(page) {
+        currentPage = page;
+        loadContacts();
+    }
+
+    function openContactModal() {
+        $('#contactForm')[0].reset();
+        $('#contactId').val('');
+        $('#contactModalLabel').text('Add Contact');
+        $('#contactModal').modal('show');
+    }
+
+    function editContact(id) {
+        $.get(`${apiBaseUrl}/${id}`, function (contact) {
+            $('#contactId').val(contact.id);
+            $('#firstName').val(contact.firstName);
+            $('#lastName').val(contact.lastName);
+            $('#phone').val(contact.phone);
+            $('#address').val(contact.address);
+            $('#contactModalLabel').text('Edit Contact');
+            $('#contactModal').modal('show');
+        });
+    }
+
+    function deleteContact(id) {
+        if (confirm('Are you sure you want to delete this contact?')) {
+            $.ajax({
+                url: `${apiBaseUrl}/${id}`,
+                type: 'DELETE',
+                success: function () {
+                    loadContacts();
+                }
+            });
+        }
+    }
+
+    function sortTable(field) {
+        if (sortField === field) {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortField = field;
+            sortDirection = 'asc';
+        }
+        loadContacts();
+    }
+</script>
+
+</body>
+</html>
