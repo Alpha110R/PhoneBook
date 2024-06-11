@@ -5,8 +5,7 @@
 - First name and last name can be only with letters and digits.
 
 ## Run the project:
-1) docker build .
-2) docker-compose up
+docker-compose up
 
 ## DockerHub Link :whale:
 https://hub.docker.com/layers/alpha110r/server-risephonebook/alon-001/images/sha256-d7bae0d07b259911ec650302c9ccfb533a03092829d777afdb2e5030e1718dc7?context=repo
